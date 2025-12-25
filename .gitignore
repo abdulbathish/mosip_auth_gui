@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environment
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log
+authenticator.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test directories
+test_install/
+test_install_scripts/
+
+# Build artifacts
+dist/
+build/
+*.egg-info/
+
+# Package files
+*.tar.gz
+*.zip
+mosip-auth-gui-*/

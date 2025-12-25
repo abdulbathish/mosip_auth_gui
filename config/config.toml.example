@@ -1,0 +1,44 @@
+[mosip_auth]
+timestamp_format = "%Y-%m-%dT%H:%M:%S"
+ida_auth_version = '1.0'
+ida_auth_request_demo_id = 'mosip.identity.auth'
+ida_auth_request_kyc_id = 'mosip.identity.kyc'
+ida_auth_request_otp_id = 'mosip.identity.otp'
+ida_auth_env = 'Staging'
+authorization_header_constant = 'Authorization'
+partner_apikey = "YOUR_API_KEY_HERE"
+partner_misp_lk = "YOUR_MISP_LK_HERE"
+partner_id = "YOUR_PARTNER_ID_HERE"
+
+[mosip_auth_server]
+ida_auth_domain_uri = 'https://your-mosip-server.com'
+ida_auth_url = 'https://your-mosip-server.com/idauthentication/v1'
+
+[crypto_encrypt]
+symmetric_key_size = 256
+symmetric_nonce_size = 128
+symmetric_gcm_tag_size = 128
+encrypt_cert_path = "IDA_FIR.pem"
+decrypt_p12_file_path = "partner1.p12"
+decrypt_p12_file_password = "YOUR_PASSWORD_HERE"
+
+[crypto_signature]
+algorithm = 'RS256'
+sign_p12_file_path =  "partner1.p12"
+sign_p12_file_password = 'YOUR_PASSWORD_HERE'
+
+[logging]
+log_file_path = 'authenticator.log'
+log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+loglevel = "DEBUG"
+
+[gui]
+# ID Types available in the dropdown
+id_types = ["UIN", "VID"]
+
+# Gender options for demographic fields
+gender_options = ["Male", "Female", "Other"]
+
+# Language options for multi-language fields
+languages = ["eng", "ara", "fra"]
+
