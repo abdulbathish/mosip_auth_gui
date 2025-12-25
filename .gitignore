@@ -37,3 +37,9 @@ build/
 *.tar.gz
 *.zip
 mosip-auth-gui-*/
+
+# Sensitive files - DO NOT COMMIT
+*.pem
+*.p12
+config/config.toml
+!config/config.toml.example
