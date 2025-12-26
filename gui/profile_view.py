@@ -20,9 +20,141 @@ class ProfileView(ctk.CTkScrollableFrame):
         self.photo_label = None
         self.current_row = 0
         
+    def display_auth_response(self, response_data: Dict[str, Any], auth_status: bool = None, auth_token: str = None, error: str = None):
+        """
+        Display authentication response with status and token.
+        
+        Args:
+            response_data: Dictionary containing response data
+            auth_status: Boolean indicating authentication status
+            auth_token: Authentication token string
+            error: Error message if any
+        """
+        # Clear existing content
+        for widget in self.winfo_children():
+            widget.destroy()
+        
+        self.current_row = 0
+        
+        # Authentication Status Section (always shown first)
+        self._create_section_header("Authentication Result")
+        
+        # Display auth status with color
+        if auth_status is not None:
+            status_frame = ctk.CTkFrame(self)
+            status_frame.grid(row=self.current_row, column=0, columnspan=2, pady=10, padx=20, sticky="ew")
+            status_frame.grid_columnconfigure(1, weight=1)
+            
+            status_label = ctk.CTkLabel(
+                status_frame,
+                text="Status:",
+                font=ctk.CTkFont(size=14, weight="bold"),
+                anchor="w",
+                width=100
+            )
+            status_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+            
+            status_text = "PASSED" if auth_status else "FAILED"
+            status_color = "#2ecc71" if auth_status else "#8B0000"  # Green for pass, dark red for fail
+            
+            status_value = ctk.CTkLabel(
+                status_frame,
+                text=status_text,
+                font=ctk.CTkFont(size=16, weight="bold"),
+                text_color=status_color
+            )
+            status_value.grid(row=0, column=1, padx=10, pady=10, sticky="w")
+            
+            self.current_row += 1
+        
+        # Display auth token if available
+        if auth_token:
+            token_frame = ctk.CTkFrame(self)
+            token_frame.grid(row=self.current_row, column=0, columnspan=2, pady=5, padx=20, sticky="ew")
+            token_frame.grid_columnconfigure(1, weight=1)
+            
+            token_label = ctk.CTkLabel(
+                token_frame,
+                text="Auth Token:",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                anchor="w",
+                width=100
+            )
+            token_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+            
+            token_value = ctk.CTkLabel(
+                token_frame,
+                text=auth_token,
+                font=ctk.CTkFont(size=12, family="Courier"),
+                anchor="w",
+                wraplength=500
+            )
+            token_value.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+            
+            self.current_row += 1
+        
+        # Display error if any
+        if error:
+            error_frame = ctk.CTkFrame(self)
+            error_frame.grid(row=self.current_row, column=0, columnspan=2, pady=10, padx=20, sticky="ew")
+            
+            error_label = ctk.CTkLabel(
+                error_frame,
+                text="Error:",
+                font=ctk.CTkFont(size=12, weight="bold"),
+                text_color="#8B0000",
+                anchor="w"
+            )
+            error_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+            
+            error_text = ctk.CTkTextbox(
+                error_frame,
+                height=80,
+                wrap="word",
+                font=ctk.CTkFont(size=12),
+                fg_color="#fff5f5",
+                text_color="#8B0000"
+            )
+            error_text.insert("1.0", error)
+            error_text.configure(state="disabled")
+            error_text.grid(row=1, column=0, padx=10, pady=5, sticky="ew")
+            error_frame.grid_columnconfigure(0, weight=1)
+            
+            self.current_row += 1
+        
+        # Display response data if available
+        if response_data:
+            self._create_section_header("Response Details")
+            
+            # Extract response section if it exists
+            response_section = response_data.get("response", {})
+            if response_section:
+                response_fields = {}
+                for key, value in sorted(response_section.items()):
+                    if key not in ["authStatus", "authToken"] and value is not None:
+                        formatted_key = self._format_field_name(key)
+                        response_fields[formatted_key] = str(value)
+                
+                if response_fields:
+                    self._display_key_value_pairs(response_fields)
+            
+            # Display other top-level fields
+            other_fields = {}
+            for key, value in sorted(response_data.items()):
+                if key not in ["response", "errors"] and value is not None and str(value).strip():
+                    formatted_key = self._format_field_name(key)
+                    other_fields[formatted_key] = str(value)
+            
+            if other_fields:
+                self._display_key_value_pairs(other_fields)
+        
+        # Raw Response Section (Collapsible)
+        self._create_raw_response_section(response_data)
+    
     def display_response(self, response_data: Dict[str, Any]):
         """
         Display the decrypted response data in a profile format.
+        For KYC responses with photo and profile data.
         
         Args:
             response_data: Dictionary containing decrypted response data
@@ -237,6 +369,104 @@ class ProfileView(ctk.CTkScrollableFrame):
         toggle_btn.grid(row=self.current_row, column=0, pady=10, padx=20, sticky="w")
         self.current_row += 1
     
+    def display_otp_generation_response(self, response_data: Dict[str, Any], masked_email: str = None, masked_mobile: str = None):
+        """
+        Display OTP generation response.
+        
+        Args:
+            response_data: Dictionary containing response data
+            masked_email: Masked email address
+            masked_mobile: Masked mobile number
+        """
+        # Clear existing content
+        for widget in self.winfo_children():
+            widget.destroy()
+        
+        self.current_row = 0
+        
+        # Success message
+        self._create_section_header("OTP Generation Result")
+        
+        success_frame = ctk.CTkFrame(self)
+        success_frame.grid(row=self.current_row, column=0, columnspan=2, pady=10, padx=20, sticky="ew")
+        
+        success_label = ctk.CTkLabel(
+            success_frame,
+            text="OTP sent successfully!",
+            font=ctk.CTkFont(size=16, weight="bold"),
+            text_color="#2ecc71"
+        )
+        success_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        self.current_row += 1
+        
+        # Display masked email and mobile
+        if masked_email or masked_mobile:
+            contact_frame = ctk.CTkFrame(self)
+            contact_frame.grid(row=self.current_row, column=0, columnspan=2, pady=5, padx=20, sticky="ew")
+            contact_frame.grid_columnconfigure(1, weight=1)
+            
+            if masked_email:
+                email_label = ctk.CTkLabel(
+                    contact_frame,
+                    text="Email:",
+                    font=ctk.CTkFont(size=12, weight="bold"),
+                    anchor="w",
+                    width=100
+                )
+                email_label.grid(row=0, column=0, padx=10, pady=5, sticky="w")
+                
+                email_value = ctk.CTkLabel(
+                    contact_frame,
+                    text=masked_email,
+                    font=ctk.CTkFont(size=12),
+                    anchor="w"
+                )
+                email_value.grid(row=0, column=1, padx=10, pady=5, sticky="w")
+            
+            if masked_mobile:
+                mobile_label = ctk.CTkLabel(
+                    contact_frame,
+                    text="Mobile:",
+                    font=ctk.CTkFont(size=12, weight="bold"),
+                    anchor="w",
+                    width=100
+                )
+                mobile_label.grid(row=1 if masked_email else 0, column=0, padx=10, pady=5, sticky="w")
+                
+                mobile_value = ctk.CTkLabel(
+                    contact_frame,
+                    text=masked_mobile,
+                    font=ctk.CTkFont(size=12),
+                    anchor="w"
+                )
+                mobile_value.grid(row=1 if masked_email else 0, column=1, padx=10, pady=5, sticky="w")
+            
+            self.current_row += 1
+        
+        # Display other response fields
+        if response_data:
+            self._create_section_header("Response Details")
+            
+            response_fields = {}
+            for key, value in sorted(response_data.items()):
+                if key not in ["response", "errors"] and value is not None and str(value).strip():
+                    formatted_key = self._format_field_name(key)
+                    response_fields[formatted_key] = str(value)
+            
+            # Also include response section fields
+            response_section = response_data.get("response", {})
+            if response_section:
+                for key, value in sorted(response_section.items()):
+                    if key not in ["maskedEmail", "maskedMobile"] and value is not None and str(value).strip():
+                        formatted_key = self._format_field_name(key)
+                        response_fields[formatted_key] = str(value)
+            
+            if response_fields:
+                self._display_key_value_pairs(response_fields)
+        
+        # Raw Response Section
+        self._create_raw_response_section(response_data)
+    
     def display_error(self, error_message: str):
         """Display an error message."""
         # Clear existing content
@@ -249,7 +479,7 @@ class ProfileView(ctk.CTkScrollableFrame):
             self,
             text="Error",
             font=ctk.CTkFont(size=18, weight="bold"),
-            text_color="red"
+            text_color="#8B0000"
         )
         error_label.grid(row=self.current_row, column=0, columnspan=2, pady=20, padx=20)
         self.current_row += 1
@@ -258,7 +488,9 @@ class ProfileView(ctk.CTkScrollableFrame):
             self,
             height=150,
             wrap="word",
-            font=ctk.CTkFont(size=12)
+            font=ctk.CTkFont(size=12),
+            fg_color="#fff5f5",
+            text_color="#8B0000"
         )
         error_text.insert("1.0", error_message)
         error_text.configure(state="disabled")
