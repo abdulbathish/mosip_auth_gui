@@ -2,4 +2,6 @@ customtkinter>=5.2.0
 pillow>=10.0.0
 mosip-auth-sdk>=0.5.4
 dynaconf>=3.2.0
+glymur>=0.12.0
+opencv-python>=4.8.0
 
