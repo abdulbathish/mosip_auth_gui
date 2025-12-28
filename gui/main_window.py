@@ -1,8 +1,8 @@
-"""Main application window."""
 import customtkinter as ctk
 import threading
 from typing import Optional, Callable
 import sys
+import platform
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from utils.config_loader import GUIConfig
@@ -13,7 +13,6 @@ from .profile_view import ProfileView
 
 
 class MainWindow(ctk.CTk):
-    """Main application window."""
     
     def __init__(self, auth_handler, **kwargs):
         super().__init__(**kwargs)
@@ -23,84 +22,150 @@ class MainWindow(ctk.CTk):
         self.profile_view: Optional[ProfileView] = None
         self.gui_config = GUIConfig()
         
-        self.title("MOSIP Authentication")
-        self.geometry("1000x700")
+        self.title("MOSIP IDA Authentication Testing Tool")
+        self.geometry("1200x800")
         
-        # Configure grid
+        self._set_window_icon()
+        
         self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(1, weight=1)
+        self.grid_rowconfigure(2, weight=1)
         
         self._create_header()
         self._create_main_content()
         self._create_status_bar()
     
+    def _set_window_icon(self):
+        logo_path = Path(__file__).parent.parent / "logo.png"
+        if not logo_path.exists():
+            return
+        
+        try:
+            if platform.system() == "Windows":
+                try:
+                    import ctypes
+                    myappid = 'com.mosip.auth.gui.1.0'
+                    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+                except:
+                    pass
+                
+                ico_path = Path(__file__).parent.parent / "logo.ico"
+                if ico_path.exists():
+                    self.iconbitmap(str(ico_path))
+                else:
+                    try:
+                        from PIL import Image
+                        img = Image.open(logo_path)
+                        ico_path = Path(__file__).parent.parent / "logo.ico"
+                        img.save(ico_path, format='ICO')
+                        self.iconbitmap(str(ico_path))
+                    except:
+                        pass
+            else:
+                try:
+                    from PIL import Image, ImageTk
+                    import tkinter as tk
+                    img = Image.open(logo_path)
+                    photo = ImageTk.PhotoImage(img)
+                    self.iconphoto(False, photo)
+                    self._icon_photo = photo
+                except:
+                    pass
+        except Exception:
+            pass
+    
     def _create_header(self):
-        """Create header with auth type selection and UIN/VID input."""
-        header_frame = ctk.CTkFrame(self)
-        header_frame.grid(row=0, column=0, sticky="ew", padx=20, pady=10)
+        header_frame = ctk.CTkFrame(self, corner_radius=0, fg_color=("#f0f0f0", "#1a1a1a"))
+        header_frame.grid(row=0, column=0, sticky="ew", padx=0, pady=0)
         header_frame.grid_columnconfigure(1, weight=1)
         
-        # Auth type selection
-        auth_type_label = ctk.CTkLabel(header_frame, text="Auth Type:", anchor="w")
-        auth_type_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        logo_path = Path(__file__).parent.parent / "logo.png"
+        logo_exists = False
+        if logo_path.exists():
+            try:
+                from PIL import Image
+                logo_image = Image.open(logo_path)
+                logo_image = logo_image.resize((40, 40), Image.Resampling.LANCZOS)
+                logo_ctk = ctk.CTkImage(light_image=logo_image, dark_image=logo_image, size=(40, 40))
+                logo_label = ctk.CTkLabel(header_frame, image=logo_ctk, text="")
+                logo_label.grid(row=0, column=0, padx=(25, 10), pady=15, sticky="w")
+                logo_exists = True
+            except Exception:
+                pass
+        
+        title_label = ctk.CTkLabel(
+            header_frame,
+            text="MOSIP IDA Authentication Testing Tool",
+            font=ctk.CTkFont(size=24, weight="bold")
+        )
+        title_label.grid(row=0, column=0, padx=(25 if not logo_exists else 80, 0), pady=15, sticky="w")
         
         self.auth_type_var = ctk.StringVar(value="kyc")
-        auth_type_frame = ctk.CTkFrame(header_frame)
-        auth_type_frame.grid(row=0, column=1, padx=10, pady=10, sticky="w")
+        auth_type_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
+        auth_type_frame.grid(row=0, column=1, padx=20, pady=15, sticky="e")
         
         kyc_radio = ctk.CTkRadioButton(
             auth_type_frame,
-            text="KYC Auth",
+            text="Demo KYC",
             variable=self.auth_type_var,
             value="kyc",
-            command=self._on_auth_type_changed
+            command=self._on_auth_type_changed,
+            font=ctk.CTkFont(size=13, weight="bold")
         )
-        kyc_radio.grid(row=0, column=0, padx=10)
+        kyc_radio.grid(row=0, column=0, padx=8)
         
         demo_radio = ctk.CTkRadioButton(
             auth_type_frame,
-            text="Demographic Auth",
+            text="Demo Auth",
             variable=self.auth_type_var,
             value="demo",
-            command=self._on_auth_type_changed
+            command=self._on_auth_type_changed,
+            font=ctk.CTkFont(size=13, weight="bold")
         )
-        demo_radio.grid(row=0, column=1, padx=10)
+        demo_radio.grid(row=0, column=1, padx=8)
         
         otp_radio = ctk.CTkRadioButton(
             auth_type_frame,
-            text="OTP Auth",
+            text="OTP KYC",
             variable=self.auth_type_var,
             value="otp",
-            command=self._on_auth_type_changed
+            command=self._on_auth_type_changed,
+            font=ctk.CTkFont(size=13, weight="bold")
         )
-        otp_radio.grid(row=0, column=2, padx=10)
+        otp_radio.grid(row=0, column=2, padx=8)
         
-        # UIN/VID input
-        id_frame = ctk.CTkFrame(header_frame)
-        id_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky="ew")
-        id_frame.grid_columnconfigure(1, weight=1)
+        input_card = ctk.CTkFrame(self, corner_radius=12)
+        input_card.grid(row=1, column=0, sticky="ew", padx=20, pady=(15, 20))
+        input_card.grid_columnconfigure(4, weight=1)
         
-        id_type_label = ctk.CTkLabel(id_frame, text="ID Type:", anchor="w")
-        id_type_label.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+        ctk.CTkLabel(
+            input_card,
+            text="ID Type:",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            anchor="w"
+        ).grid(row=0, column=0, padx=(15, 8), pady=15, sticky="w")
         
         id_types = self.gui_config.id_types
         default_id_type = self.gui_config.default_id_type
         self.id_type_var = ctk.StringVar(value=default_id_type)
         id_type_combo = ctk.CTkComboBox(
-            id_frame,
+            input_card,
             values=id_types,
             variable=self.id_type_var,
-            width=100
+            width=110,
+            font=ctk.CTkFont(size=12)
         )
-        id_type_combo.grid(row=0, column=1, padx=10, pady=10, sticky="w")
+        id_type_combo.grid(row=0, column=1, padx=8, pady=15, sticky="w")
         
-        # OTP mode selection (only shown for OTP auth type) - moved after ID Type
-        self.otp_mode_frame = ctk.CTkFrame(id_frame)
-        self.otp_mode_frame.grid(row=0, column=2, padx=10, pady=10, sticky="w")
-        self.otp_mode_frame.grid_remove()  # Hidden by default
+        self.otp_mode_frame = ctk.CTkFrame(input_card, fg_color="transparent")
+        self.otp_mode_frame.grid(row=0, column=2, padx=8, pady=15, sticky="w")
+        self.otp_mode_frame.grid_remove()
         
-        otp_mode_label = ctk.CTkLabel(self.otp_mode_frame, text="Mode:", anchor="w")
-        otp_mode_label.grid(row=0, column=0, padx=5, pady=5, sticky="w")
+        ctk.CTkLabel(
+            self.otp_mode_frame,
+            text="Mode:",
+            font=ctk.CTkFont(size=12),
+            anchor="w"
+        ).grid(row=0, column=0, padx=(0, 5), sticky="w")
         
         self.email_var = ctk.BooleanVar(value=False)
         self.phone_var = ctk.BooleanVar(value=False)
@@ -109,54 +174,61 @@ class MainWindow(ctk.CTk):
             self.otp_mode_frame,
             text="Email",
             variable=self.email_var,
-            width=80
+            width=70,
+            font=ctk.CTkFont(size=11)
         )
-        email_checkbox.grid(row=0, column=1, padx=5, pady=5, sticky="w")
+        email_checkbox.grid(row=0, column=1, padx=5, sticky="w")
         
         phone_checkbox = ctk.CTkCheckBox(
             self.otp_mode_frame,
             text="Phone",
             variable=self.phone_var,
-            width=80
+            width=70,
+            font=ctk.CTkFont(size=11)
         )
-        phone_checkbox.grid(row=0, column=2, padx=5, pady=5, sticky="w")
+        phone_checkbox.grid(row=0, column=2, padx=5, sticky="w")
         
-        id_label = ctk.CTkLabel(id_frame, text="ID:", anchor="w")
-        id_label.grid(row=0, column=3, padx=10, pady=10, sticky="w")
+        ctk.CTkLabel(
+            input_card,
+            text="ID:",
+            font=ctk.CTkFont(size=13, weight="bold"),
+            anchor="w"
+        ).grid(row=0, column=3, padx=(15, 8), pady=15, sticky="w")
         
-        self.id_entry = ctk.CTkEntry(id_frame, placeholder_text="Enter UIN or VID")
-        self.id_entry.grid(row=0, column=4, padx=10, pady=10, sticky="ew")
+        self.id_entry = ctk.CTkEntry(
+            input_card,
+            placeholder_text="Enter UIN or VID",
+            font=ctk.CTkFont(size=13),
+            height=35
+        )
+        self.id_entry.grid(row=0, column=4, padx=(0, 15), pady=15, sticky="ew")
         
-        # Submit button
         self.submit_btn = ctk.CTkButton(
-            header_frame,
+            input_card,
             text="Submit",
             command=self._on_submit,
-            width=100
+            width=120,
+            height=35,
+            font=ctk.CTkFont(size=13, weight="bold"),
+            corner_radius=8
         )
-        self.submit_btn.grid(row=1, column=2, padx=10, pady=10)
+        self.submit_btn.grid(row=0, column=5, padx=(10, 15), pady=15, sticky="e")
     
     def _create_main_content(self):
-        """Create main content area with form and profile view."""
-        # Create notebook for form and results
-        self.notebook = ctk.CTkTabview(self)
-        self.notebook.grid(row=1, column=0, sticky="nsew", padx=20, pady=10)
+        self.notebook = ctk.CTkTabview(self, corner_radius=12)
+        self.notebook.grid(row=2, column=0, sticky="nsew", padx=20, pady=(0, 10))
         
-        # Form tab
         self.form_tab = self.notebook.add("Form")
         self.form_tab.grid_columnconfigure(0, weight=1)
         self.form_tab.grid_rowconfigure(0, weight=1)
         
-        # Results tab
         self.results_tab = self.notebook.add("Results")
         self.results_tab.grid_columnconfigure(0, weight=1)
         self.results_tab.grid_rowconfigure(0, weight=1)
         
-        # Create profile view
         self.profile_view = ProfileView(self.results_tab)
         self.profile_view.grid(row=0, column=0, sticky="nsew")
         
-        # Create OTP submit button container (will be placed in form tab below OTP form)
         self.otp_submit_container = ctk.CTkFrame(self.form_tab)
         self.otp_submit_container.grid_columnconfigure(0, weight=1)
         
@@ -168,27 +240,37 @@ class MainWindow(ctk.CTk):
             state="disabled"
         )
         self.otp_submit_btn.grid(row=0, column=0, padx=20, pady=10)
-        self.otp_submit_container.grid_remove()  # Hidden initially
+        self.otp_submit_container.grid_remove()
         
-        # Load initial form after tabs are created
         self._on_auth_type_changed()
     
     def _create_status_bar(self):
-        """Create status bar at bottom."""
+        status_frame = ctk.CTkFrame(self, corner_radius=0, fg_color=("#e8e8e8", "#2a2a2a"), height=35)
+        status_frame.grid(row=3, column=0, sticky="ew", padx=0, pady=0)
+        status_frame.grid_propagate(False)
+        status_frame.grid_columnconfigure(0, weight=1)
+        
         self.status_label = ctk.CTkLabel(
-            self,
+            status_frame,
             text="Ready",
-            anchor="w"
+            anchor="w",
+            font=ctk.CTkFont(size=11)
         )
-        self.status_label.grid(row=2, column=0, sticky="ew", padx=20, pady=5)
+        self.status_label.grid(row=0, column=0, sticky="ew", padx=20, pady=8)
     
     def _on_auth_type_changed(self):
-        """Handle auth type selection change."""
-        # Remove current form
         if self.current_form:
             self.current_form.destroy()
+            self.current_form = None
         
-        # Create new form based on selection
+        for widget in self.profile_view.winfo_children():
+            widget.destroy()
+        self.profile_view.current_row = 0
+        self.profile_view.photo_image = None
+        self.profile_view.photo_label = None
+        
+        self.notebook.set("Form")
+        
         auth_type = self.auth_type_var.get()
         
         if auth_type == "kyc":
@@ -203,20 +285,24 @@ class MainWindow(ctk.CTk):
             self.otp_submit_container.grid_remove()
         elif auth_type == "otp":
             self.current_form = OTPForm(self.form_tab)
-            # Show OTP mode selection in header
             self.otp_mode_frame.grid()
-            # Change submit button text for OTP generation
             self.submit_btn.configure(text="Generate OTP", state="normal", command=self._on_generate_otp)
-            # Show OTP submit container (button disabled until OTP is generated)
             self.otp_submit_container.grid(row=1, column=0, sticky="ew", padx=20, pady=10)
             self.otp_submit_btn.configure(state="disabled")
+            if hasattr(self.current_form, 'reset'):
+                self.current_form.reset()
         
         if self.current_form:
             self.current_form.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+            self.current_form.update()
+        
+        self.id_entry.delete(0, "end")
+        self.email_var.set(False)
+        self.phone_var.set(False)
+        self._update_status("Ready", "info")
     
     def _on_submit(self):
-        """Handle form submission."""
-        # Validate ID
+        individual_id = self.id_entry.get().strip()
         individual_id = self.id_entry.get().strip()
         if not individual_id:
             self._update_status("Error: Please enter UIN or VID", "error")
@@ -225,19 +311,17 @@ class MainWindow(ctk.CTk):
         id_type = self.id_type_var.get()
         auth_type = self.auth_type_var.get()
         
-        # Check if auth type is implemented
         if auth_type not in ["kyc", "demo"]:
             self._update_status("This authentication type is not yet implemented", "error")
             return
         
-        # Validate form
         if not hasattr(self.current_form, 'validate'):
             self._update_status("Form validation not available", "error")
             return
         
         if auth_type == "kyc":
             is_valid, error_msg = self.current_form.validate()
-        else:  # demo
+        else:
             is_valid = self.current_form.validate()
             error_msg = "Validation failed" if not is_valid else None
         
@@ -245,21 +329,18 @@ class MainWindow(ctk.CTk):
             self._update_status(f"Validation error: {error_msg}", "error")
             return
         
-        # Get form data
         if auth_type == "kyc":
             demographics_data = self.current_form.get_data()
-        else:  # demo
+        else:
             demographics_data = self.current_form.get_demographic_data()
         
         if not demographics_data:
             self._update_status("Error: Could not create demographics data", "error")
             return
         
-        # Disable submit button and show loading
         self.submit_btn.configure(state="disabled")
         self._update_status("Processing authentication request...", "info")
         
-        # Run authentication in separate thread to avoid blocking UI
         thread = threading.Thread(
             target=self._perform_authentication,
             args=(individual_id, id_type, demographics_data, auth_type)
@@ -268,7 +349,6 @@ class MainWindow(ctk.CTk):
         thread.start()
     
     def _perform_authentication(self, individual_id: str, id_type: str, demographics_data, auth_type: str):
-        """Perform authentication in background thread."""
         try:
             if auth_type == "kyc":
                 result = self.auth_handler.perform_kyc(
@@ -285,7 +365,6 @@ class MainWindow(ctk.CTk):
                     consent=True
                 )
             
-            # Update UI in main thread
             self.after(0, self._handle_authentication_result, result, auth_type)
             
         except Exception as e:
@@ -298,16 +377,11 @@ class MainWindow(ctk.CTk):
             }, auth_type)
     
     def _handle_authentication_result(self, result: dict, auth_type: str = "kyc"):
-        """Handle authentication result in main thread."""
-        # Re-enable submit button
         self.submit_btn.configure(state="normal")
-        
-        # Switch to results tab
         self.notebook.set("Results")
         
         if result['success']:
             if auth_type == "demo":
-                # Display auth response with status and token
                 self.profile_view.display_auth_response(
                     response_data=result.get('data', {}),
                     auth_status=result.get('authStatus', False),
@@ -319,11 +393,9 @@ class MainWindow(ctk.CTk):
                 else:
                     self._update_status("Authentication failed", "error")
             else:
-                # Display KYC response with profile data
                 self.profile_view.display_response(result['data'])
                 self._update_status("Authentication successful!", "success")
         else:
-            # Display error
             if auth_type == "demo":
                 self.profile_view.display_auth_response(
                     response_data=result.get('data', {}),
@@ -336,8 +408,6 @@ class MainWindow(ctk.CTk):
             self._update_status(f"Error: {result['error']}", "error")
     
     def _on_generate_otp(self):
-        """Handle OTP generation."""
-        # Validate ID
         individual_id = self.id_entry.get().strip()
         if not individual_id:
             self._update_status("Error: Please enter UIN or VID", "error")
@@ -346,8 +416,6 @@ class MainWindow(ctk.CTk):
             return
         
         id_type = self.id_type_var.get()
-        
-        # Get email/phone selection from header checkboxes
         email = self.email_var.get()
         phone = self.phone_var.get()
         
@@ -357,14 +425,10 @@ class MainWindow(ctk.CTk):
                 self.current_form.set_generation_result(False, error="Please select at least one delivery method")
             return
         
-        # Reset form for new generation
         self._reset_otp_form()
-        
-        # Disable generate button and show loading
         self.submit_btn.configure(state="disabled")
         self._update_status("Generating OTP...", "info")
         
-        # Run OTP generation in separate thread
         thread = threading.Thread(
             target=self._perform_otp_generation,
             args=(individual_id, id_type, email, phone)
@@ -373,7 +437,6 @@ class MainWindow(ctk.CTk):
         thread.start()
     
     def _perform_otp_generation(self, individual_id: str, id_type: str, email: bool, phone: bool):
-        """Perform OTP generation in background thread."""
         try:
             result = self.auth_handler.generate_otp(
                 individual_id=individual_id,
@@ -382,7 +445,6 @@ class MainWindow(ctk.CTk):
                 phone=phone
             )
             
-            # Update UI in main thread
             self.after(0, self._handle_otp_generation_result, result)
             
         except Exception as e:
@@ -396,35 +458,25 @@ class MainWindow(ctk.CTk):
             })
     
     def _handle_otp_generation_result(self, result: dict):
-        """Handle OTP generation result in main thread."""
-        # Always re-enable generate button so user can generate again
         self.submit_btn.configure(state="normal")
         
         if result['success']:
-            # Update form with result (shows in Form tab)
             self.current_form.set_generation_result(
                 success=True,
                 response_data=result.get('data', {})
             )
-            
-            # Enable OTP submit button below OTP input
             self.otp_submit_btn.configure(state="normal")
-            
             self._update_status("OTP generated successfully! Enter OTP and click Submit OTP to verify.", "success")
         else:
-            # Show error in form
             self.current_form.set_generation_result(
                 success=False,
                 response_data=result.get('data', {}),
                 error=result.get('error', 'Unknown error')
             )
-            # Disable submit button if generation failed
             self.otp_submit_btn.configure(state="disabled")
             self._update_status(f"Error: {result['error']}", "error")
     
     def _on_verify_otp(self):
-        """Handle OTP verification."""
-        # Validate ID
         individual_id = self.id_entry.get().strip()
         if not individual_id:
             self._update_status("Error: Please enter UIN or VID", "error")
@@ -432,7 +484,6 @@ class MainWindow(ctk.CTk):
         
         id_type = self.id_type_var.get()
         
-        # Validate form
         if not hasattr(self.current_form, 'validate'):
             self._update_status("Form validation not available", "error")
             return
@@ -442,15 +493,12 @@ class MainWindow(ctk.CTk):
             self._update_status(f"Validation error: {error_msg}", "error")
             return
         
-        # Get OTP value and transaction ID
         otp_value = self.current_form.get_otp_value()
         txn_id = self.current_form.get_txn_id()
         
-        # Disable submit button and show loading
         self.submit_btn.configure(state="disabled")
         self._update_status("Verifying OTP...", "info")
         
-        # Run OTP verification in separate thread
         thread = threading.Thread(
             target=self._perform_otp_verification,
             args=(individual_id, id_type, otp_value, txn_id)
@@ -459,7 +507,6 @@ class MainWindow(ctk.CTk):
         thread.start()
     
     def _perform_otp_verification(self, individual_id: str, id_type: str, otp_value: str, txn_id: str):
-        """Perform OTP verification in background thread."""
         try:
             result = self.auth_handler.verify_otp(
                 individual_id=individual_id,
@@ -469,7 +516,6 @@ class MainWindow(ctk.CTk):
                 consent=True
             )
             
-            # Update UI in main thread
             self.after(0, self._handle_otp_verification_result, result)
             
         except Exception as e:
@@ -480,27 +526,18 @@ class MainWindow(ctk.CTk):
             })
     
     def _handle_otp_verification_result(self, result: dict):
-        """Handle OTP verification result in main thread."""
-        # Re-enable OTP submit button
         self.otp_submit_btn.configure(state="normal")
-        
-        # Re-enable Generate OTP button so user can generate again
         self.submit_btn.configure(state="normal")
-        
-        # Switch to results tab
         self.notebook.set("Results")
         
         if result['success']:
-            # Display KYC response (OTP verification returns KYC data, same as KYC auth)
             self.profile_view.display_response(result['data'])
             self._update_status("OTP verified successfully! You can generate a new OTP if needed.", "success")
         else:
-            # Display error
             self.profile_view.display_error(result['error'])
             self._update_status(f"Error: {result['error']}", "error")
     
     def _reset_otp_form(self):
-        """Reset OTP form to allow new generation."""
         if hasattr(self.current_form, 'otp_entry'):
             self.current_form.otp_entry.delete(0, "end")
             self.current_form.otp_entry.configure(state="disabled")
@@ -510,11 +547,11 @@ class MainWindow(ctk.CTk):
             self.current_form.response_textbox.configure(state="disabled")
         if hasattr(self.current_form, 'txn_id'):
             self.current_form.txn_id = None
-        # Disable OTP submit button
         self.otp_submit_btn.configure(state="disabled")
     
     def _update_status(self, message: str, status_type: str = "info"):
-        """Update status bar message."""
+        if not hasattr(self, 'status_label') or self.status_label is None:
+            return
         color_map = {
             "info": "gray",
             "success": "green",

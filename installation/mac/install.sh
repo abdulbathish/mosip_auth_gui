@@ -2,7 +2,7 @@
 # Installation script for MOSIP Auth GUI (Mac/Linux)
 
 echo "=========================================="
-echo "MOSIP Authentication GUI - Installer"
+echo "MOSIP IDA Authentication Testing Tool - Installer"
 echo "=========================================="
 echo ""
 
@@ -69,6 +69,68 @@ else
 fi
 
 echo ""
+echo "Creating desktop shortcut..."
+DESKTOP_DIR="$HOME/Desktop"
+APP_NAME="MOSIP IDA Authentication Testing Tool"
+APP_BUNDLE="$DESKTOP_DIR/$APP_NAME.app"
+CONTENTS_DIR="$APP_BUNDLE/Contents"
+MACOS_DIR="$CONTENTS_DIR/MacOS"
+RESOURCES_DIR="$CONTENTS_DIR/Resources"
+
+mkdir -p "$MACOS_DIR"
+mkdir -p "$RESOURCES_DIR"
+
+if [ -f "$PROJECT_ROOT/logo.png" ]; then
+    cp "$PROJECT_ROOT/logo.png" "$RESOURCES_DIR/logo.png"
+fi
+
+cat > "$CONTENTS_DIR/Info.plist" << EOF
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleExecutable</key>
+    <string>mosip_auth_gui</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.mosip.auth.gui</string>
+    <key>CFBundleName</key>
+    <string>$APP_NAME</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundleIconFile</key>
+    <string>logo</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+</dict>
+</plist>
+EOF
+
+cat > "$MACOS_DIR/mosip_auth_gui" << 'LAUNCHER_EOF'
+#!/bin/bash
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../../../.." && pwd)"
+
+if [ ! -f "$PROJECT_ROOT/venv/bin/activate" ]; then
+    osascript -e 'display dialog "Virtual environment not found. Please run install.sh first." buttons {"OK"} default button "OK" with icon stop'
+    exit 1
+fi
+
+source "$PROJECT_ROOT/venv/bin/activate"
+cd "$PROJECT_ROOT"
+python main.py
+LAUNCHER_EOF
+
+chmod +x "$MACOS_DIR/mosip_auth_gui"
+chmod +x "$PROJECT_ROOT/installation/mac/run.sh"
+
+if [ -d "$APP_BUNDLE" ]; then
+    echo "Desktop shortcut created at: $APP_BUNDLE"
+    echo "You can now launch the application from your Desktop."
+else
+    echo "Warning: Could not create desktop shortcut"
+fi
+
+echo ""
 echo "=========================================="
 echo "Installation complete!"
 echo "=========================================="
@@ -80,4 +142,6 @@ echo "Or manually:"
 echo "  cd $PROJECT_ROOT"
 echo "  source venv/bin/activate"
 echo "  python main.py"
+echo ""
+echo "Or double-click the desktop shortcut: $APP_BUNDLE"
 echo ""

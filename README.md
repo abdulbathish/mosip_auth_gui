@@ -1,6 +1,6 @@
-# MOSIP Authentication GUI
+# MOSIP IDA Authentication Testing Tool
 
-Reference implementation of a lightweight GUI application for MOSIP authentication operations.
+Reference implementation of a lightweight GUI application for MOSIP IDA authentication operations.
 
 ## Installation
 

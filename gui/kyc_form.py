@@ -1,4 +1,3 @@
-"""KYC authentication form with checkbox-based field selection."""
 import customtkinter as ctk
 from typing import Optional
 import sys
@@ -9,67 +8,127 @@ from mosip_auth_sdk.models import DemographicsModel, IdentityInfo
 
 
 class KYCForm(ctk.CTkScrollableFrame):
-    """Form for KYC authentication with checkbox-based field selection."""
     
     def __init__(self, parent, **kwargs):
         super().__init__(parent, **kwargs)
-        self.grid_columnconfigure(0, weight=0)  # Checkbox column
-        self.grid_columnconfigure(1, weight=0)  # Label column
-        self.grid_columnconfigure(2, weight=1)  # Value column (expandable)
-        self.grid_columnconfigure(3, weight=0)  # Language column
+        self.grid_columnconfigure(0, weight=0)
+        self.grid_columnconfigure(1, weight=0)
+        self.grid_columnconfigure(2, weight=1)
+        self.grid_columnconfigure(3, weight=0)
         
-        # Load GUI configuration
         self.gui_config = GUIConfig()
         self.languages = self.gui_config.languages
         self.gender_options = self.gui_config.gender_options
         
-        # Form fields storage
         self.fields = {}
+        self._enable_mousewheel_scroll()
         self._create_form_fields()
     
+    def _enable_mousewheel_scroll(self):
+        import platform
+        
+        def on_mousewheel(event):
+            try:
+                if hasattr(self, '_parent_canvas') and self._parent_canvas:
+                    if platform.system() == "Darwin":
+                        self._parent_canvas.yview_scroll(int(-1 * (event.delta)), "units")
+                    else:
+                        self._parent_canvas.yview_scroll(int(-1 * (event.delta / 120)), "units")
+            except:
+                pass
+        
+        def on_linux_scroll_up(event):
+            try:
+                if hasattr(self, '_parent_canvas') and self._parent_canvas:
+                    self._parent_canvas.yview_scroll(-1, "units")
+            except:
+                pass
+        
+        def on_linux_scroll_down(event):
+            try:
+                if hasattr(self, '_parent_canvas') and self._parent_canvas:
+                    self._parent_canvas.yview_scroll(1, "units")
+            except:
+                pass
+        
+        def bind_to_mousewheel(event):
+            root = self.winfo_toplevel()
+            root.bind_all("<MouseWheel>", on_mousewheel)
+            if platform.system() == "Linux":
+                root.bind_all("<Button-4>", on_linux_scroll_up)
+                root.bind_all("<Button-5>", on_linux_scroll_down)
+        
+        def unbind_from_mousewheel(event):
+            root = self.winfo_toplevel()
+            root.unbind_all("<MouseWheel>")
+            if platform.system() == "Linux":
+                root.unbind_all("<Button-4>")
+                root.unbind_all("<Button-5>")
+        
+        self.bind("<Enter>", bind_to_mousewheel)
+        self.bind("<Leave>", unbind_from_mousewheel)
+    
     def _create_field_row(self, row, field_name, label_text, field_type="text", is_list=False):
-        """Create a row with checkbox, label, input field, and language selector if needed."""
-        # Checkbox
+        field_card = ctk.CTkFrame(self, corner_radius=8)
+        field_card.grid(row=row, column=0, columnspan=4, pady=4, padx=15, sticky="ew")
+        field_card.grid_columnconfigure(2, weight=1)
+        
         checkbox_var = ctk.BooleanVar(value=False)
         checkbox = ctk.CTkCheckBox(
-            self,
+            field_card,
             text="",
             variable=checkbox_var,
-            width=30
+            width=20
         )
-        checkbox.grid(row=row, column=0, pady=10, padx=(20, 5), sticky="w")
+        checkbox.grid(row=0, column=0, pady=6, padx=(10, 6), sticky="w")
         
-        # Label
-        label = ctk.CTkLabel(self, text=label_text, anchor="w", width=180)
-        label.grid(row=row, column=1, pady=10, padx=5, sticky="w")
+        label = ctk.CTkLabel(
+            field_card,
+            text=label_text,
+            anchor="w",
+            width=180,
+            font=ctk.CTkFont(size=12, weight="bold")
+        )
+        label.grid(row=0, column=1, pady=6, padx=6, sticky="w")
         
-        # Value input
         if field_type == "text":
-            value_entry = ctk.CTkEntry(self, placeholder_text=f"Enter {label_text.lower()}")
+            value_entry = ctk.CTkEntry(
+                field_card,
+                placeholder_text=f"Enter {label_text.lower()}",
+                font=ctk.CTkFont(size=11),
+                height=28
+            )
         elif field_type == "combo":
             value_entry = ctk.CTkComboBox(
-                self,
+                field_card,
                 values=self.gender_options,
-                width=150
+                width=140,
+                font=ctk.CTkFont(size=11),
+                height=28
             )
             value_entry.set(self.gui_config.default_gender)
         else:
-            value_entry = ctk.CTkEntry(self, placeholder_text=f"Enter {label_text.lower()}")
+            value_entry = ctk.CTkEntry(
+                field_card,
+                placeholder_text=f"Enter {label_text.lower()}",
+                font=ctk.CTkFont(size=11),
+                height=28
+            )
         
-        value_entry.grid(row=row, column=2, pady=10, padx=5, sticky="ew")
+        value_entry.grid(row=0, column=2, pady=6, padx=6, sticky="ew")
         
-        # Language selector (for list fields)
         lang_combo = None
         if is_list:
             lang_combo = ctk.CTkComboBox(
-                self,
+                field_card,
                 values=self.languages,
-                width=80
+                width=80,
+                font=ctk.CTkFont(size=10),
+                height=28
             )
             lang_combo.set("eng")
-            lang_combo.grid(row=row, column=3, pady=10, padx=5, sticky="w")
+            lang_combo.grid(row=0, column=3, pady=6, padx=(0, 10), sticky="w")
         
-        # Store field info
         self.fields[field_name] = {
             'checkbox': checkbox_var,
             'value': value_entry,
@@ -78,12 +137,10 @@ class KYCForm(ctk.CTkScrollableFrame):
             'field_type': field_type
         }
         
-        # Disable value and lang initially
         value_entry.configure(state="disabled")
         if lang_combo:
             lang_combo.configure(state="disabled")
         
-        # Enable/disable based on checkbox
         def toggle_field():
             if checkbox_var.get():
                 value_entry.configure(state="normal")
@@ -93,82 +150,78 @@ class KYCForm(ctk.CTkScrollableFrame):
                 value_entry.configure(state="disabled")
                 if lang_combo:
                     lang_combo.configure(state="disabled")
-                # Clear value when disabled
                 if hasattr(value_entry, 'delete'):
                     value_entry.delete(0, 'end')
         
         checkbox.configure(command=toggle_field)
     
     def _create_form_fields(self):
-        """Create form fields with checkboxes."""
         row = 0
         
-        # Header
-        header = ctk.CTkLabel(
-            self,
-            text="Select fields to include in authentication:",
-            font=ctk.CTkFont(size=14, weight="bold")
-        )
-        header.grid(row=row, column=0, columnspan=4, pady=(10, 20), padx=20, sticky="w")
+        header_frame = ctk.CTkFrame(self, fg_color="transparent")
+        header_frame.grid(row=row, column=0, columnspan=4, pady=(10, 12), padx=15, sticky="ew")
+        
+        ctk.CTkLabel(
+            header_frame,
+            text="Select fields to include in authentication",
+            font=ctk.CTkFont(size=15, weight="bold")
+        ).grid(row=0, column=0, sticky="w")
+        
+        separator = ctk.CTkFrame(header_frame, height=2, fg_color=("#e0e0e0", "#404040"))
+        separator.grid(row=1, column=0, pady=(6, 0), sticky="ew")
+        separator.grid_columnconfigure(0, weight=1)
+        
         row += 1
         
-        # DOB
         self._create_field_row(row, "dob", "Date of Birth (YYYY/MM/DD)", "text", False)
         row += 1
         
-        # Gender
         self._create_field_row(row, "gender", "Gender", "combo", True)
         row += 1
         
-        # Name
         self._create_field_row(row, "name", "Name", "text", True)
         row += 1
         
-        # Age
         self._create_field_row(row, "age", "Age", "text", False)
         row += 1
         
-        # Address (using fullAddress field)
         self._create_field_row(row, "full_address", "Address", "text", True)
         row += 1
         
-        # Consent checkbox (always required)
+        consent_frame = ctk.CTkFrame(self, corner_radius=8, fg_color=("#e8f5e9", "#1a3a1a"))
+        consent_frame.grid(row=row, column=0, columnspan=4, pady=12, padx=15, sticky="ew")
+        
         self.consent_var = ctk.BooleanVar(value=True)
         consent_checkbox = ctk.CTkCheckBox(
-            self,
+            consent_frame,
             text="I consent to the authentication process",
             variable=self.consent_var,
             font=ctk.CTkFont(size=12, weight="bold")
         )
-        consent_checkbox.grid(row=row, column=0, columnspan=4, pady=20, padx=20, sticky="w")
+        consent_checkbox.grid(row=0, column=0, pady=8, padx=12, sticky="w")
     
     def get_data(self) -> Optional[DemographicsModel]:
-        """Get form data as DemographicsModel, including only checked fields."""
         try:
             demographics_data = {}
             
-            # Process each field
             for field_name, field_info in self.fields.items():
                 if not field_info['checkbox'].get():
-                    continue  # Skip unchecked fields
+                    continue
                 
                 value_widget = field_info['value']
                 value = value_widget.get().strip() if hasattr(value_widget, 'get') else ""
                 
                 if not value:
-                    continue  # Skip empty values
+                    continue
                 
                 if field_info['is_list']:
-                    # List fields need IdentityInfo
                     lang = field_info['lang'].get() if field_info['lang'] else "eng"
                     demographics_data[field_name] = [
                         IdentityInfo(language=lang, value=value)
                     ]
                 else:
-                    # Simple string fields
                     demographics_data[field_name] = value
             
-            # Create DemographicsModel
             return DemographicsModel(**demographics_data)
             
         except Exception as e:
@@ -182,7 +235,6 @@ class KYCForm(ctk.CTkScrollableFrame):
         Returns:
             Tuple of (is_valid, error_message)
         """
-        # Check if at least one field is selected
         has_selected_field = any(
             field_info['checkbox'].get() 
             for field_info in self.fields.values()
@@ -191,14 +243,12 @@ class KYCForm(ctk.CTkScrollableFrame):
         if not has_selected_field:
             return False, "Please select at least one field to authenticate"
         
-        # Check if selected fields have values
         for field_name, field_info in self.fields.items():
             if field_info['checkbox'].get():
                 value = field_info['value'].get().strip() if hasattr(field_info['value'], 'get') else ""
                 if not value:
                     return False, f"Field '{field_name}' is selected but has no value"
         
-        # Validate DOB format if selected
         if self.fields['dob']['checkbox'].get():
             dob = self.fields['dob']['value'].get().strip()
             try:
@@ -211,7 +261,6 @@ class KYCForm(ctk.CTkScrollableFrame):
             except ValueError:
                 return False, "Date of Birth must be in format YYYY/MM/DD"
         
-        # Consent is required
         if not self.consent_var.get():
             return False, "Consent is required"
         

@@ -2,7 +2,7 @@
 REM Installation script for MOSIP Auth GUI (Windows)
 
 echo ==========================================
-echo MOSIP Authentication GUI - Installer
+echo MOSIP IDA Authentication Testing Tool - Installer
 echo ==========================================
 echo.
 
@@ -62,6 +62,36 @@ if errorlevel 1 (
 )
 
 echo.
+echo Creating desktop shortcut...
+set "DESKTOP_DIR=%USERPROFILE%\Desktop"
+set "APP_NAME=MOSIP IDA Authentication Testing Tool"
+set "SHORTCUT_PATH=%DESKTOP_DIR%\%APP_NAME%.lnk"
+set "TARGET_PATH=%PROJECT_ROOT%\installation\windows\run.bat"
+set "ICON_PATH=%PROJECT_ROOT%\logo.png"
+set "VBS_FILE=%TEMP%\create_shortcut.vbs"
+
+(
+echo Set oWS = WScript.CreateObject^("WScript.Shell"^)
+echo sLinkFile = "%SHORTCUT_PATH%"
+echo Set oLink = oWS.CreateShortcut^(sLinkFile^)
+echo oLink.TargetPath = "%TARGET_PATH%"
+echo oLink.WorkingDirectory = "%PROJECT_ROOT%"
+echo oLink.IconLocation = "%ICON_PATH%"
+echo oLink.Description = "MOSIP IDA Authentication Testing Tool"
+echo oLink.Save
+) > "%VBS_FILE%"
+
+cscript //nologo "%VBS_FILE%" >nul 2>&1
+del "%VBS_FILE%"
+
+if exist "%SHORTCUT_PATH%" (
+    echo Desktop shortcut created at: %SHORTCUT_PATH%
+    echo You can now launch the application from your Desktop.
+) else (
+    echo Warning: Could not create desktop shortcut
+)
+
+echo.
 echo ==========================================
 echo Installation complete!
 echo ==========================================
@@ -73,5 +103,7 @@ echo Or manually:
 echo   cd %PROJECT_ROOT%
 echo   venv\Scripts\activate
 echo   python main.py
+echo.
+echo Or double-click the desktop shortcut: %SHORTCUT_PATH%
 echo.
 pause

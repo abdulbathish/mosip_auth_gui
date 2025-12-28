@@ -1,5 +1,5 @@
 #!/bin/bash
-# Run script for MOSIP Authentication GUI (Mac)
+# Run script for MOSIP IDA Authentication Testing Tool (Mac)
 
 # Get the script directory
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"

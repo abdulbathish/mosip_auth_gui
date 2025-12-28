@@ -1,5 +1,5 @@
 @echo off
-REM Run script for MOSIP Authentication GUI (Windows)
+REM Run script for MOSIP IDA Authentication Testing Tool (Windows)
 
 REM Get the script directory and project root
 cd /d "%~dp0"
