@@ -284,9 +284,9 @@ class ProfileView(ctk.CTkScrollableFrame):
         placeholder_label.place(relx=0.5, rely=0.5, anchor="center")
     
     def _format_field_name(self, key: str) -> str:
-        key_clean = key.replace('_eng', '').replace('_ara', '').replace('_fra', '').strip()
-        formatted = key_clean.replace('_', ' ')
         import re
+        key_clean = re.sub(r'_[a-z]{2,3}$', '', key)
+        formatted = key_clean.replace('_', ' ')
         formatted = re.sub(r'(?<!^)(?=[A-Z])', ' ', formatted)
         words = formatted.split()
         formatted = ' '.join(word.capitalize() for word in words)
